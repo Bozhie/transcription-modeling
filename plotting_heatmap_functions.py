@@ -7,22 +7,6 @@ import bioframe as bf
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 
-# Uses pybbi to measure signal over set of input
-def generate_signal_matrix(chip_seq_file, interval_chrom, interval_start, interval_end, windowSize, windowType, nbins):
-    
-    if windowType == 'extend':
-        interval_start = interval_start - windowSize
-        interval_end = interval_end + windowSize
-        
-    if windowType == 'centered':
-        interval_start = (interval_start + interval_end)/2 - windowSize
-        interval_end = (interval_start + interval_end)/2 + windowSize
-    
-    with bbi.open(chip_seq_file) as f:
-        matrix = f.stackup(interval_chrom, interval_start, interval_end, bins=nbins)
-        
-    return matrix
-
 
 # Uses pybbi to measure signal over set of input
 def generate_signal_matrix(chip_seq_file, interval_chrom, interval_start, interval_end, windowSize, windowType, nbins):
@@ -63,7 +47,9 @@ def plot_avg_signal(DE_results_df, stackup_matrix, title, ax=None, DE_value_col=
 # Note: todo: DE_value_col='log2FoldChange', sort_by_DE=True ==> collect into sort_by_col = 'log2FoldChange'
 
 ## todo: do heatmap for DE_values in a separate function (like originally outlined) ** this can be less flexible/specific to diverging up_vs_down and maybe other color/heatmaps can have their own functions for other types of categories
-def plot_binned_signal_heatmap(DE_results_df, stackup_matrix, title, ax=None, DE_value_col='log2FoldChange', sort_by_DE=True, agg_key='DE_status', agg_categories=['up', 'down'], include_category_map=True, color_categories=['r', 'b']):
+def plot_binned_signal_heatmap(DE_results_df, stackup_matrix, title, ax=None, DE_value_col='log2FoldChange', sort_by_DE=True, 
+                               agg_key='DE_status', agg_categories=['up', 'down'], include_category_map=True, color_categories=['r', 'b'], 
+                               windowSize=1000, nbins=40):
     
     # if include_category_map --> change dimensions here
     if ax == None:
@@ -109,9 +95,17 @@ def plot_binned_signal_heatmap(DE_results_df, stackup_matrix, title, ax=None, DE
         
         cbar = ax[0].figure.colorbar(occ, ax=ax[0], extend='max', location='left')
         
-        ax[1].imshow(np.vstack(ordered_heatmap), cmap='gray_r', aspect='auto', vmin=0, vmax=100)
+        ax[1].imshow(np.vstack(ordered_heatmap), cmap='gray_r', aspect='auto', vmin=0, vmax=100)    
+        ax[1].set(xticks=np.arange(0, nbins+1, 10),
+        xticklabels=(np.arange(0, (windowSize*2)+1, (windowSize/2))-(windowSize*2)//2),
+        xlabel='Distance from boundary (bp)')
+        ax[1].set_title(title)
         
     else:
         
         ax.imshow(np.vstack(ordered_heatmap), cmap='gray_r', aspect='auto', vmin=0, vmax=100)
+        ax.set(xticks=np.arange(0, nbins+1, 10),
+        xticklabels=(np.arange(0, (windowSize*2)+1, (windowSize/2))-(windowSize*2)//2),
+        xlabel='Distance from boundary (bp)')
+        ax.set_title(title)
         
